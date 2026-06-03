@@ -18,7 +18,7 @@ engine_lock = threading.Lock()
 
 def create_engine():
     sf = Stockfish(path="./stockfish-linux")
-    sf.update_engine_parameters({"Hash": 64, "Threads": 1}
+    sf.update_engine_parameters({"Hash": 64, "Threads": 1})
     return sf
 
 stockfish = create_engine()
