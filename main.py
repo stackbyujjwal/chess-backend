@@ -17,10 +17,9 @@ app.add_middleware(
 engine_lock = threading.Lock()
 
 def create_engine():
-    # Ensure path is strictly ./stockfish-linux for Render
-    sf = Stockfish(path="./stockfish-linux")
-    # Free Server Optimization: Strict 64MB RAM and 1 Thread
-    sf.update_engine_parameters({"Hash": 64, "Threads": 1})
+    # FIX: Yeh hai wo Linux ka asli path jahan HF ne engine chupaya hai!
+    sf = Stockfish(path="/usr/games/stockfish")
+    sf.update_engine_parameters({"Hash": 1024, "Threads": 2})
     return sf
 
 stockfish = create_engine()
@@ -39,7 +38,7 @@ def calculate_move(pos: Position):
 
             stockfish.set_fen_position(pos.fen_string)
             
-            # FREE SERVER OPTIMIZATION: 3 alag heavy calls ki jagah sirf 1 baar call karenge
+            # Optimized Calculation
             top_moves = stockfish.get_top_moves(1)
             
             if not top_moves:
@@ -57,7 +56,6 @@ def calculate_move(pos: Position):
             return {"best_move": best_move, "score": score, "pv": best_move, "depth": 15}
             
         except Exception as e:
-            # Agar free server fir bhi limit hit kare aur crash ho, toh engine auto-restart ho jayega
             stockfish = create_engine()
             return {"best_move": None, "score": "Error", "pv": "Engine rebooted.", "depth": 0}
 
@@ -84,7 +82,6 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
         while True:
             data = await websocket.receive_json()
             
-            # Agar kisi player ne resign kar diya
             if data.get("type") == "resign":
                 for ws in rooms[room_id]:
                     if ws != websocket:
