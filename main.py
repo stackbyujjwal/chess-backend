@@ -17,7 +17,7 @@ app.add_middleware(
 engine_lock = threading.Lock()
 
 def create_engine():
-    sf = Stockfish(path="./stockfish-windows-x86-64-avx2.exe")
+    sf = Stockfish(path="./stockfish-linux")
     sf.update_engine_parameters({"Hash": 1024, "Threads": 2}) 
     return sf
 
