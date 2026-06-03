@@ -17,7 +17,9 @@ app.add_middleware(
 engine_lock = threading.Lock()
 
 def create_engine():
+    # Ensure path is strictly ./stockfish-linux for Render
     sf = Stockfish(path="./stockfish-linux")
+    # Free Server Optimization: Strict 64MB RAM and 1 Thread
     sf.update_engine_parameters({"Hash": 64, "Threads": 1})
     return sf
 
@@ -36,17 +38,26 @@ def calculate_move(pos: Position):
                 return {"best_move": None, "score": "Invalid", "pv": "Impossible board position.", "depth": 0}
 
             stockfish.set_fen_position(pos.fen_string)
-            time_in_ms = pos.think_time * 1000
-            best_move = stockfish.get_best_move_time(time_in_ms)
             
-            evaluation = stockfish.get_evaluation()
+            # FREE SERVER OPTIMIZATION: 3 alag heavy calls ki jagah sirf 1 baar call karenge
             top_moves = stockfish.get_top_moves(1)
             
-            score = round(evaluation["value"] / 100, 2) if evaluation["type"] == "cp" else f"Mate in {evaluation['value']}"
-            pv = top_moves[0]['Move'] if top_moves else best_move
+            if not top_moves:
+                return {"best_move": None, "score": "0", "pv": "", "depth": 0}
+                
+            best_move = top_moves[0]["Move"]
+            cp = top_moves[0].get("Centipawn")
+            mate = top_moves[0].get("Mate")
             
-            return {"best_move": best_move, "score": score, "pv": pv, "depth": 20}
+            if mate is not None:
+                score = f"Mate in {mate}"
+            else:
+                score = round(cp / 100, 2) if cp is not None else 0
+                
+            return {"best_move": best_move, "score": score, "pv": best_move, "depth": 15}
+            
         except Exception as e:
+            # Agar free server fir bhi limit hit kare aur crash ho, toh engine auto-restart ho jayega
             stockfish = create_engine()
             return {"best_move": None, "score": "Error", "pv": "Engine rebooted.", "depth": 0}
 
